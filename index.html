@@ -1,0 +1,175 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>JavaScript Zipcode App Using Fetch & Bulma CSS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.6.0/css/bulma.min.css" />
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+
+    <style>
+        .icon-right, .icon-wrong {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <section class="hero hero-body is-dark container">
+        <h1 class="title">Location Info</h1>
+        <h2 class="subtitle">Enter a zipcode to get the location info</h2>
+        <form id="zipForm">
+            <div class="field">
+                <p class="control has-icons-left has-icons-right">
+                    <input class="input zip is-large" type="number" placeholder="Enter Zipcode">
+                    <span class="icon is-small is-left">
+                        <i class="fa fa-map-pin"></i>
+                    </span>
+                    <span class="icon is-small is-right icon-right">
+                        <i class="fa fa-check"></i>
+                    </span>
+                    <span class="icon is-small is-right icon-wrong">
+                        <i class="fa fa-remove"></i>
+                    </span>
+                </p>
+            </div>
+        </form>
+    </section>
+    <br />
+    <div class="container">
+        <div id="output"></div>
+    </div>
+
+
+    <script>
+
+        /// set the listener
+        document.querySelector("#zipForm").addEventListener("submit", getZipCode);
+        document.querySelector("body").addEventListener("click", removeOutput);
+
+        /// function to handle the click events
+        function removeOutput(e) {
+
+            /// check the target
+            if (e.target.className === "delete") {
+
+                /// make the output empty...
+                document.querySelector("#output").innerHTML = "";
+                document.querySelector(".icon-right").style.display = "none";
+                document.querySelector(".icon-wrong").style.display = "none";
+                document.querySelector(".zip").value = "";
+            }
+        }
+
+        /// get zip code
+        function getZipCode(e) {
+
+            /// prevent by default
+            e.preventDefault();
+
+            /// get the zipcode
+            let zipCode = document.querySelector(".zip").value;
+
+            /// Get the zipcode - http://www.zippopotam.us/ http://api.zippopotam.us/us/${zip}
+            fetch(`https://api.zippopotam.us/us/${zipCode}`)
+            .then(resp => {
+
+                /// check for status
+                if (resp.status !== 200) {
+
+                    /// show the error message...
+                    document.querySelector("#output").innerHTML =
+                        `
+                            <article class ="message is-danger">
+                            <div class ="message-header">
+                                    <h2>Error | <small>${zipCode}</small> </h2>
+                                    <button class ="delete"></button>
+                                </div>
+                                <div class ="message-body">
+                                    Invalid Zipcode. Please try again
+                                </div>
+                            </article>
+                        `
+                    ;
+
+                    /// show wrong icon
+                    showHideIcons("wrong");
+
+                    /// log the error...
+                    throw Error(resp.statusText);
+                }
+                else {
+                    return resp.json();
+                }
+            })
+            .then(data => {
+
+                /// show the success message...
+                let output = "";
+
+                /// loop the data..
+                /// {"post code": "60085",
+                /// "country": "United States", "country abbreviation": "US",
+                /// "places": [{"place name": "Waukegan", "longitude": "-87.8651", "state": "Illinois", "state abbreviation": "IL", "latitude": "42.3542"}]}
+                data.places.forEach(place => {
+
+                    /// append
+                    output +=
+                        `
+                            <article class ="message is-primary">
+                                <div class ="message-header">
+                                    <h2>${data.country} | <small>${data["post code"]}</small> </h2>
+                                    <button class="delete"></button>
+                                </div>
+                                <div class ="message-body">
+                                    <ul>
+                                        <li>
+                                            <strong>City: </strong>
+                                            ${place["place name"]}
+                                        </li>
+                                        <li>
+                                            <strong>State: </strong>
+                                            ${place["state"]}
+                                            <small>(${place["state abbreviation"]})</small>
+                                        </li>
+                                        <li>
+                                            <strong>Longitude: </strong>
+                                            ${place["longitude"]}
+                                        </li>
+                                        <li>
+                                            <strong>Latitude: </strong>
+                                            ${place["latitude"]}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </article>
+                        `
+                    ;
+                });
+
+                /// set the html
+                /// show the message...
+                document.querySelector("#output").innerHTML = output;
+
+                /// show right icon
+                showHideIcons("right");
+            })
+            .catch(err => console.log(err));
+        }
+
+
+        /// func to show/hide the icons
+        function showHideIcons(icon) {
+
+            /// hide by default
+            document.querySelector(".icon-right").style.display = "none";
+            document.querySelector(".icon-wrong").style.display = "none";
+
+            /// show by icon
+            document.querySelector(`.icon-${icon}`).style.display = "inline-flex";
+        }
+
+    </script>
+</body>
+</html>
